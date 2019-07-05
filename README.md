@@ -1,6 +1,6 @@
 # go-region-router
 
-[![godoc](https://godoc.org/github.com/adaptant-labs/go-region-router?status.svg)](http://godoc.org/github.com/adaptant-labs/go-region-router)
+[![godoc](https://godoc.org/github.com/adaptant-labs/go-region-router/middleware?status.svg)](http://godoc.org/github.com/adaptant-labs/go-region-router/middleware)
 [![Build Status](https://travis-ci.com/adaptant-labs/go-region-router.svg?branch=master)](https://travis-ci.com/adaptant-labs/go-region-router#)
 
 A simple router and middleware for region endpoint redirection written in Go.
