@@ -1,0 +1,25 @@
+{
+  "services": [
+    {
+      "id":   "apigw0",
+      "name": "api",
+      "tags": [
+        "v1",
+        "region-de"
+      ],
+      "meta": {
+        "protocol": "http"
+      },
+      "port": 80
+    },
+    {
+      "id":   "apigw1",
+      "name": "api",
+      "tags": [
+        "v1",
+        "region-at"
+      ],
+      "port": 443
+    }
+  ]
+}
