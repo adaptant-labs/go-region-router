@@ -150,7 +150,7 @@ to the default handler without redirection.
 ## Online Documentation
 
 Online API documentation is provided through godoc, this can be accessed
-directly on the [package entry](https://godoc.org/github.com/adaptant-labs/go-region-router)
+directly on the [package entry](https://godoc.org/github.com/adaptant-labs/go-region-router/middleware)
 in the godoc package repository.
 
 ## Deployment
