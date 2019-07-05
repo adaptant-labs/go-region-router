@@ -28,13 +28,13 @@ func NewRegionRouter() *RegionRouter {
 // Handler provides a Region Routing middleware for enabling regional server redirection.
 // Example:
 //
-// import (
+//  import (
 //		"github.com/adaptant-labs/go-region-router/middleware"
 //		"github.com/gorilla/mux"
 //		"net/http"
-// )
+//  )
 //
-// func main() {
+//  func main() {
 //		m := mux.NewRouter()
 //		r := region.NewRegionRouter()
 //		r.SetRegionServer("de", "https://de.api.xxx.com")
@@ -42,7 +42,7 @@ func NewRegionRouter() *RegionRouter {
 //
 //		// Apply the region routing middleware with default settings
 //		http.ListenAndServer(":8080", r.RegionHandler()(m))
-// }
+//  }
 func (reg *RegionRouter) RegionHandler() func(h http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		reg.h = h

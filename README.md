@@ -1,5 +1,6 @@
 # go-region-router
 
+[![godoc](https://godoc.org/github.com/adaptant-labs/go-region-router?status.svg)](http://godoc.org/github.com/adaptant-labs/go-region-router)
 [![Build Status](https://travis-ci.com/adaptant-labs/go-region-router.svg?branch=master)](https://travis-ci.com/adaptant-labs/go-region-router#)
 
 A simple router and middleware for region endpoint redirection written in Go.
@@ -145,6 +146,12 @@ func main() {
 Note that as above, the middleware expects to find the country code in the custom `X-Country-Code` header on in-bound
 requests. Requests that do not have this header defined (or for where no matching route is available) will pass through
 to the default handler without redirection.
+
+## Online Documentation
+
+Online API documentation is provided through godoc, this can be accessed
+directly on the [package entry](https://godoc.org/github.com/adaptant-labs/go-region-router)
+in the godoc package repository.
 
 ## Deployment
 
