@@ -16,7 +16,7 @@ func main() {
 	var host string
 
 	app := cli.NewApp()
-	app.Name = "region-router"
+	app.Name = "go-region-router"
 	app.Usage = "A simple router for region endpoints"
 	app.Version = "0.0.1"
 	app.Author = "Adaptant Labs"
