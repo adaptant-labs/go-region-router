@@ -1,7 +1,6 @@
 FROM golang:latest as builder
 
-# This is needed in order to avoid an installation outside of $GOPATH error
-ENV GOBIN /go/bin
+ENV GO111MODULE=on
 
 WORKDIR /go/src
 ADD . /go/src
