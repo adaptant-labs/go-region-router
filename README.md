@@ -75,6 +75,13 @@ An example service configuration is provided in `docs/consul.d`:
 }
 ```
 
+This can be registered with the Consul Agent directly via:
+
+```
+$ consul services register docs/consul.d/consul-service.json
+Registered service: api
+Registered service: api
+```
 ### Starting the Router
 
 Once Consul is up and running and the service definitions are amended with the appropriate data, the router can be
@@ -120,9 +127,11 @@ COPYRIGHT:
 
 ```
 
-### Using the Middleware
+### Middlewares
 
-Routing middleware is provided in the `github.com/adaptant-labs/go-region-router/middleware` package. While the
+#### Region Routing Middleware
+
+Region Routing middleware is provided in the `github.com/adaptant-labs/go-region-router/middleware` package. While the
 Consul-backed router provides a more elaborate usage example, direct usage of the middleware for establishing static
 routes is rather straightforward:
 
@@ -147,6 +156,18 @@ Note that as above, the middleware expects to find the country code in the custo
 requests. Requests that do not have this header defined (or for where no matching route is available) will pass through
 to the default handler without redirection.
 
+#### GeoIP Reverse Lookup Middleware
+Routers may also enable a GeoIP-based lookup from the client IP address in order to identify the country code and
+automatically insert the `X-Country-Code` header on in-bound requests. This, however, requires the availability of the
+[reverse-geocoding-service] - the host:port of which must be set in the `REVERSE_GEOCODING_SERVICE` environment
+variable. Furthermore, if the router is placed behind other loadbalancers and routers, it will also look at the
+`X-Forwarded-For` header in order to determine the originating client IP.
+
+If used, this should wrap the RegionHandler above:
+
+```
+http.ListenAndServe(":8080", region.CountryCodeHandler(r.RegionHandler()(m)))
+```
 ## Online Documentation
 
 Online API documentation is provided through godoc, this can be accessed
@@ -155,8 +176,10 @@ in the godoc package repository.
 
 ## Deployment
 
-Docker images are provided under [adaptant/go-region-router][docker], and should be deployed together with a Consul
-agent. Information on obtaining and deploying a Consul image can be found on the [Consul Docker page][consul-docker].
+Docker images are provided under [adaptant/go-region-router][docker-regionrouter], and should be deployed together with
+a Consul agent and reverse geocoding service (optionally). Information on obtaining and deploying a Consul image can be
+found on the [Consul Docker page][consul-docker], while information about the reverse geocoding service images can be
+found under [adaptant/reverse-geocoding-service][docker-geocoder].
 
 Assuming the container with the Consul Agent is running at 172.17.0.2 with port 8500 exposed, `go-region-router` can be
 invoked as:
@@ -165,7 +188,8 @@ invoked as:
 $ docker run -d -p 7000:7000 adaptant/go-region-router --consul-agent 172.17.0.2:8500
 ```
 
-[docker]: https://hub.docker.com/r/adaptant/go-region-router
+[docker-regionrouter]: https://hub.docker.com/r/adaptant/go-region-router
+[docker-geocoder]: https://hub.docker.com/r/adaptant/reverse-geocoding-service
 [consul-docker]: https://hub.docker.com/_/consul
 
 ## Features and bugs

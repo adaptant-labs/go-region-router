@@ -80,7 +80,7 @@ func main() {
 		addr := host + ":" + strconv.Itoa(port)
 		log.Printf("Listening on %s ...", addr)
 
-		return http.ListenAndServe(":7000", r.RegionHandler()(m))
+		return http.ListenAndServe(":7000", region.CountryCodeHandler(r.RegionHandler()(m)))
 	}
 
 	err := app.Run(os.Args)
