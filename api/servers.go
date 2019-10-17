@@ -1,15 +1,15 @@
-package main
+package api
 
 import "net/url"
 
 type ServerDefinition struct {
-	// Constructed scheme://host:port URL for region redirection - note that this excludes both the path specification
+	// Constructed scheme://Host:port URL for region redirection - note that this excludes both the path specification
 	// and query parameters, as these will be lazily inserted by the middleware
-	url		url.URL
+	URL		url.URL
 
 	// ISO 3166-1 alpha-2 country code - e.g. de
-	country		string
+	CountryCode		string
 
 	// Is the server designated as the default handler for unmatched country codes?
-	defaultServer	bool
+	DefaultServer	bool
 }

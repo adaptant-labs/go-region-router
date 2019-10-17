@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"fmt"
@@ -7,13 +7,13 @@ import (
 )
 
 type ConsulConfiguration struct {
-	host			string
-	service			string
-	tag				string
+	Host    string
+	Service string
+	Tag     string
 }
 
 func NewConsulConfiguration() *ConsulConfiguration {
-	return &ConsulConfiguration{service: "api", tag: "v1"}
+	return &ConsulConfiguration{Service: "api", Tag: "v1"}
 }
 
 // ServerDefinitionFromServiceEntry creates a routing definition for a region from a Consul Catalog Service entry
@@ -39,19 +39,19 @@ func ServerDefinitionFromServiceEntry(entry *consul.CatalogService) *ServerDefin
 		scheme = "https"
 	}
 
-	srv.url.Scheme = scheme
-	srv.url.Host = fmt.Sprintf("%s:%d", address, entry.ServicePort)
-	srv.defaultServer = false
+	srv.URL.Scheme = scheme
+	srv.URL.Host = fmt.Sprintf("%s:%d", address, entry.ServicePort)
+	srv.DefaultServer = false
 
 	// Extract a region-<code> identifier from the tags
 	for _, tag := range entry.ServiceTags {
 		if tag == "default" {
-			srv.defaultServer = true
+			srv.DefaultServer = true
 			continue
 		}
 
 		if strings.HasPrefix(tag, "region-") {
-			srv.country = strings.ToLower(strings.TrimPrefix(tag, "region-"))
+			srv.CountryCode = strings.ToLower(strings.TrimPrefix(tag, "region-"))
 			break
 		}
 	}
@@ -64,15 +64,15 @@ func ConsulRegionRoutes(config *ConsulConfiguration) ([]*ServerDefinition, error
 	var servers []*ServerDefinition
 
 	consulConfig := consul.DefaultConfig()
-	if config.host != "" {
-		consulConfig.Address = config.host
+	if config.Host != "" {
+		consulConfig.Address = config.Host
 	}
 	client, err := consul.NewClient(consulConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	results, _, err := client.Catalog().Service(config.service, config.tag, nil)
+	results, _, err := client.Catalog().Service(config.Service, config.Tag, nil)
 	if err != nil {
 		return nil, err
 	}

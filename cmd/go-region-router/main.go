@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/adaptant-labs/go-region-router/api"
 	"github.com/adaptant-labs/go-region-router/middleware"
 	"github.com/gorilla/mux"
 	"github.com/urfave/cli"
@@ -23,27 +24,27 @@ func main() {
 	app.Email = "labs@adaptant.io"
 	app.Copyright = "(c) 2019 Adaptant Solutions AG"
 
-	config := NewConsulConfiguration()
+	config := api.NewConsulConfiguration()
 
 	app.Flags = []cli.Flag {
 		cli.StringFlag{
 			Name:			"consul-agent",
 			Usage:			"Consul agent to connect to",
-			Destination:	&config.host,
+			Destination:	&config.Host,
 		},
 
 		cli.StringFlag{
 			Name:			"consul-service",
 			Usage:			"Name of Consul Service to look up",
-			Value:			config.service,
-			Destination:	&config.service,
+			Value:			config.Service,
+			Destination:	&config.Service,
 		},
 
 		cli.StringFlag{
 			Name:			"consul-tag",
 			Usage:			"Name of Consul tag to filter on",
-			Value:			config.tag,
-			Destination:	&config.tag,
+			Value:			config.Tag,
+			Destination:	&config.Tag,
 		},
 
 		cli.StringFlag{
@@ -66,21 +67,21 @@ func main() {
 		r := region.NewRegionRouter()
 
 		// Fetch the list of servers from Consul
-		servers, err := ConsulRegionRoutes(config)
+		servers, err := api.ConsulRegionRoutes(config)
 		if err != nil {
 			return err
 		}
 
 		for _, srv := range servers {
-			if srv.defaultServer {
+			if srv.DefaultServer {
 				log.Printf("Setting up default routing to %s",
-					srv.url.String())
-				r.SetDefaultServer(srv.url.String())
+					srv.URL.String())
+				r.SetDefaultServer(srv.URL.String())
 			}
 
 			log.Printf("Setting up region routing for [%s] -> %s",
-				strings.ToUpper(srv.country), srv.url.String())
-			r.SetRegionServer(srv.country, srv.url.String())
+				strings.ToUpper(srv.CountryCode), srv.URL.String())
+			r.SetRegionServer(srv.CountryCode, srv.URL.String())
 		}
 
 		addr := host + ":" + strconv.Itoa(port)
