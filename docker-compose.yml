@@ -10,7 +10,7 @@ services:
       - 8500:8500
     healthcheck:
         test: ["CMD", "curl", "-f", "http://localhost:8500"]
-        interval: 30s
+        interval: 5s
         timeout: 10s
         retries: 5
 
