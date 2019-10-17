@@ -21,7 +21,10 @@
       "tags": [
         "v1",
         "region-at"
-      ]
+      ],
+      "meta": {
+        "protocol": "http"
+      }
     }
   ]
 }

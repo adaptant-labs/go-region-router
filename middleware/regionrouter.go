@@ -115,10 +115,20 @@ func (reg RegionRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !strings.EqualFold(r.Host, dest.Host) {
-		ipAddr, _ := net.LookupIP(dest.Host)
+		hostPort := dest.Host
+
+		host, port, err := net.SplitHostPort(hostPort)
+		if err == nil {
+			ipAddr, _ := net.LookupIP(host)
+			if ipAddr == nil {
+				println("Unable to lookup IP for", host)
+			} else {
+				hostPort = net.JoinHostPort(ipAddr[0].String(), port)
+			}
+		}
 
 		// Re-build the destination URL
-		destUrl := dest.Scheme + "://" + ipAddr[0].String() + r.URL.Path
+		destUrl := dest.Scheme + "://" + hostPort + r.URL.Path
 		if r.URL.RawQuery != "" {
 			destUrl += "?" + r.URL.RawQuery
 		}
