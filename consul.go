@@ -41,14 +41,13 @@ func ServerDefinitionFromServiceEntry(entry *consul.CatalogService) *ServerDefin
 
 	srv.url.Scheme = scheme
 	srv.url.Host = fmt.Sprintf("%s:%d", address, entry.ServicePort)
+	srv.defaultServer = false
 
 	// Extract a region-<code> identifier from the tags
 	for _, tag := range entry.ServiceTags {
 		if tag == "default" {
 			srv.defaultServer = true
 			continue
-		} else {
-			srv.defaultServer = false
 		}
 
 		if strings.HasPrefix(tag, "region-") {
