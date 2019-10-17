@@ -8,9 +8,37 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 )
 
+type Router struct {
+	Region		*region.RegionRouter
+	mux			*mux.Router
+	config		*api.ConsulConfiguration
+	Refresh		chan bool
+}
+
+func (r Router) Start() error {
+	return http.ListenAndServe(":7000", region.CountryCodeHandler(r.Region.RegionHandler()(r.mux)))
+}
+
+func NewRouter(config *api.ConsulConfiguration) *Router {
+	r := &Router{
+		Region: region.NewRegionRouter(),
+		mux: mux.NewRouter(),
+		config: config,
+		Refresh: make(chan bool, 1),
+	}
+
+	err := r.Region.UpdateRegionRoutesFromConsul(config)
+	if err != nil {
+		return nil
+	}
+
+	return r
+}
 func main() {
 	var port int
 	var host string
@@ -61,24 +89,38 @@ func main() {
 		},
 	}
 
-	app.Action = func(c *cli.Context) error {
-		m := mux.NewRouter()
-		r := region.NewRegionRouter()
-
-		// Fetch the list of servers from Consul
-		err := r.UpdateRegionRoutesFromConsul(config)
-		if err != nil {
-			return err
-		}
-
-		addr := host + ":" + strconv.Itoa(port)
-		log.Printf("Listening on %s ...", addr)
-
-		return http.ListenAndServe(":7000", region.CountryCodeHandler(r.RegionHandler()(m)))
+	r := NewRouter(config)
+	if r == nil {
+		log.Fatal("Failed to initialize router")
 	}
 
-	err := app.Run(os.Args)
-	if err != nil {
-		log.Fatal(err)
+	app.Action = func(c *cli.Context) error {
+		addr := host + ":" + strconv.Itoa(port)
+		log.Printf("Listening on %s ...", addr)
+		return r.Start()
+	}
+
+	go func() {
+		err := app.Run(os.Args)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	s := make(chan os.Signal, 1)
+	signal.Notify(s, syscall.SIGUSR2)
+
+	go func() {
+		for {
+			<-s
+			r.Refresh <- true
+			log.Println("Setting refresh needed")
+		}
+	}()
+
+	for {
+		<-r.Refresh
+		_ = r.Region.UpdateRegionRoutesFromConsul(r.config)
+		log.Println("Reloading server configuration...")
 	}
 }
