@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/urfave/cli"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -20,8 +21,10 @@ type Router struct {
 	Refresh		chan bool
 }
 
-func (r Router) Start() error {
-	return http.ListenAndServe(":7000", region.CountryCodeHandler(r.Region.RegionHandler()(r.mux)))
+func (r Router) Start(host string, port int) error {
+	addr := net.JoinHostPort(host, strconv.Itoa(port))
+	log.Printf("Listening on %s ...", addr)
+	return http.ListenAndServe(addr, region.CountryCodeHandler(r.Region.RegionHandler()(r.mux)))
 }
 
 func NewRouter(config *api.ConsulConfiguration) *Router {
@@ -95,9 +98,7 @@ func main() {
 	}
 
 	app.Action = func(c *cli.Context) error {
-		addr := host + ":" + strconv.Itoa(port)
-		log.Printf("Listening on %s ...", addr)
-		return r.Start()
+		return r.Start(c.String("host"), c.Int("port"))
 	}
 
 	go func() {
