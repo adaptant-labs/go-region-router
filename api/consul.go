@@ -1,8 +1,9 @@
 package api
 
 import (
-	"fmt"
 	consul "github.com/hashicorp/consul/api"
+	"net"
+	"strconv"
 	"strings"
 )
 
@@ -40,7 +41,7 @@ func ServerDefinitionFromServiceEntry(entry *consul.CatalogService) *ServerDefin
 	}
 
 	srv.URL.Scheme = scheme
-	srv.URL.Host = fmt.Sprintf("%s:%d", address, entry.ServicePort)
+	srv.URL.Host = net.JoinHostPort(address, strconv.Itoa(entry.ServicePort))
 	srv.DefaultServer = false
 
 	// Extract a region-<code> identifier from the tags
@@ -52,7 +53,6 @@ func ServerDefinitionFromServiceEntry(entry *consul.CatalogService) *ServerDefin
 
 		if strings.HasPrefix(tag, "region-") {
 			srv.CountryCode = strings.ToLower(strings.TrimPrefix(tag, "region-"))
-			break
 		}
 	}
 

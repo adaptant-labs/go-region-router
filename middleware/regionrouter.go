@@ -119,8 +119,6 @@ func (reg RegionRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, unavailableStr, http.StatusServiceUnavailable)
 			return
 		}
-
-		return
 	}
 
 	dest, err := url.Parse(target)
