@@ -1,25 +1,27 @@
 {
   "services": [
     {
-      "id":   "apigw0",
-      "name": "api",
+      "id":      "apigw0",
+      "name":    "api",
+      "address": "http-echo-de",
+      "port":    5678,
       "tags": [
         "v1",
         "region-de"
       ],
       "meta": {
         "protocol": "http"
-      },
-      "port": 80
+      }
     },
     {
-      "id":   "apigw1",
-      "name": "api",
+      "id":      "apigw1",
+      "name":    "api",
+      "address": "http-echo-at",
+      "port":    5678,
       "tags": [
         "v1",
         "region-at"
-      ],
-      "port": 443
+      ]
     }
   ]
 }

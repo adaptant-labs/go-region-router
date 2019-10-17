@@ -1,6 +1,7 @@
 package region
 
 import (
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -114,8 +115,10 @@ func (reg RegionRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !strings.EqualFold(r.Host, dest.Host) {
+		ipAddr, _ := net.LookupIP(dest.Host)
+
 		// Re-build the destination URL
-		destUrl := dest.Scheme + "://" + dest.Host + r.URL.Path
+		destUrl := dest.Scheme + "://" + ipAddr[0].String() + r.URL.Path
 		if r.URL.RawQuery != "" {
 			destUrl += "?" + r.URL.RawQuery
 		}
