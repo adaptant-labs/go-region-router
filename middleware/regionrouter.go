@@ -1,6 +1,7 @@
 package region
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -61,6 +62,16 @@ func (reg *RegionRouter) GetRegionServer(countryCode string) string {
 	return s
 }
 
+// SetDefaultServer sets the server to pass on to if no region matching is possible
+func (reg *RegionRouter) SetDefaultServer(server string) bool {
+	return reg.SetRegionServer("default", server)
+}
+
+// GetDefaultServer returns the registered server handlign requests for otherwise unhandled regions
+func (reg *RegionRouter) GetDefaultServer() string {
+	return reg.GetRegionServer("default")
+}
+
 // SetRegionServer defines a registered server for handling requests in a specific region. It returns a boolean
 // value indicating whether the registration of the server for the designated country code succeeded or not - this
 // may fail in case where a server has already been defined.
@@ -97,8 +108,16 @@ func (reg RegionRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	target := reg.GetRegionServer(strings.ToLower(destRegion))
 	if target == "" {
-		// If there is no specific server to handle this region, pass through to the next middleware
-		reg.h.ServeHTTP(w, r)
+		// If there is no specific server to handle this region, pass through to the default server, if defined
+		target = reg.GetDefaultServer()
+
+		// Otherwise, return a 503 response
+		if target == "" {
+			unavailableStr := fmt.Sprintf("Service is unavailable in your region (%s)", destRegion)
+			http.Error(w, unavailableStr, http.StatusServiceUnavailable)
+			return
+		}
+
 		return
 	}
 

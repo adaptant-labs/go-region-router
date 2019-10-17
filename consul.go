@@ -44,6 +44,13 @@ func ServerDefinitionFromServiceEntry(entry *consul.CatalogService) *ServerDefin
 
 	// Extract a region-<code> identifier from the tags
 	for _, tag := range entry.ServiceTags {
+		if tag == "default" {
+			srv.defaultServer = true
+			continue
+		} else {
+			srv.defaultServer = false
+		}
+
 		if strings.HasPrefix(tag, "region-") {
 			srv.country = strings.ToLower(strings.TrimPrefix(tag, "region-"))
 			break

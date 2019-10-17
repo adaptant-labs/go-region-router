@@ -37,6 +37,39 @@ has been for backend routing in response to a moving mobile frontend, this remai
 go get github.com/adaptant-labs/go-region-router
 ```
 
+## Quick Start
+
+A Docker Compose file is provided in order to demonstrate the basic operation:
+
+```sh
+$ docker-compose up -d
+```
+
+Once this is up and running, it can be tested as:
+
+```sh
+$ curl -L -H 'X-Country-Code: at' -X GET http://localhost:7000
+hello from the AT endpoint
+$ curl -L -H 'X-Country-Code: de' -X GET http://localhost:7000
+hello from the DE endpoint
+```
+
+If the `default` tag has been set for a server, as in the example, a country
+mismatch will redirect to the default server:
+
+```sh
+$ curl -L -H 'X-Country-Code: it' -X GET http://localhost:7000
+hello from the DE endpoint
+```
+
+if not provided in the service definition, a mismatch will result in a 503
+response:
+
+```sh
+$ curl -L -H 'X-Country-Code: it' -X GET http://localhost:7000
+Service is unavailable in your region (it)
+```
+
 ## Usage
 
 ### Consul Configuration
@@ -145,6 +178,9 @@ import (
 func main() {
 	m := mux.NewRouter()
 	r := region.NewRegionRouter()
+
+	r.SetDefaultServer("https://default.api.xxx.com")
+
 	r.SetRegionServer("de", "https://de.api.xxx.com")
 	r.SetRegionServer("at", "https://at.api.xxx.com")
 
@@ -152,11 +188,15 @@ func main() {
 	http.ListenAndServer(":8080", r.RegionHandler()(m))
 }
 ```
+
 Note that as above, the middleware expects to find the country code in the custom `X-Country-Code` header on in-bound
 requests. Requests that do not have this header defined (or for where no matching route is available) will pass through
-to the default handler without redirection.
+to the `default` tagged service. If no default handler is specified, a 503 response will be returned informing the
+user of the unavailability of a server for their specific region. This response may be trapped for e.g. spinning up a
+new instance in a new region and having the client periodically retry the connection.
 
 #### GeoIP Reverse Lookup Middleware
+
 Routers may also enable a GeoIP-based lookup from the client IP address in order to identify the country code and
 automatically insert the `X-Country-Code` header on in-bound requests. This, however, requires the availability of the
 [reverse-geocoding-service] - the host:port of which must be set in the `REVERSE_GEOCODING_SERVICE` environment
@@ -168,6 +208,7 @@ If used, this should wrap the RegionHandler above:
 ```
 http.ListenAndServe(":8080", region.CountryCodeHandler(r.RegionHandler()(m)))
 ```
+
 ## Online Documentation
 
 Online API documentation is provided through godoc, this can be accessed
@@ -177,16 +218,9 @@ in the godoc package repository.
 ## Deployment
 
 Docker images are provided under [adaptant/go-region-router][docker-regionrouter], and should be deployed together with
-a Consul agent and reverse geocoding service (optionally). Information on obtaining and deploying a Consul image can be
-found on the [Consul Docker page][consul-docker], while information about the reverse geocoding service images can be
-found under [adaptant/reverse-geocoding-service][docker-geocoder].
-
-Assuming the container with the Consul Agent is running at 172.17.0.2 with port 8500 exposed, `go-region-router` can be
-invoked as:
-
-```
-$ docker run -d -p 7000:7000 adaptant/go-region-router --consul-agent 172.17.0.2:8500
-```
+a Consul agent and reverse geocoding service (optionally) - as provided in the sample `docker-compose.yml`. Information
+on obtaining and deploying a Consul image can be found on the [Consul Docker page][consul-docker], while information
+about the reverse geocoding service images can be found under [adaptant/reverse-geocoding-service][docker-geocoder].
 
 [docker-regionrouter]: https://hub.docker.com/r/adaptant/go-region-router
 [docker-geocoder]: https://hub.docker.com/r/adaptant/reverse-geocoding-service

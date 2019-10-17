@@ -8,5 +8,8 @@ type ServerDefinition struct {
 	url		url.URL
 
 	// ISO 3166-1 alpha-2 country code - e.g. de
-	country	string
+	country		string
+
+	// Is the server designated as the default handler for unmatched country codes?
+	defaultServer	bool
 }

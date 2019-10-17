@@ -72,6 +72,12 @@ func main() {
 		}
 
 		for _, srv := range servers {
+			if srv.defaultServer {
+				log.Printf("Setting up default routing to %s",
+					srv.url.String())
+				r.SetDefaultServer(srv.url.String())
+			}
+
 			log.Printf("Setting up region routing for [%s] -> %s",
 				strings.ToUpper(srv.country), srv.url.String())
 			r.SetRegionServer(srv.country, srv.url.String())
