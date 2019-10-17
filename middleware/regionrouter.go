@@ -2,6 +2,8 @@ package region
 
 import (
 	"fmt"
+	"github.com/adaptant-labs/go-region-router/api"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -158,4 +160,26 @@ func (reg RegionRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	reg.h.ServeHTTP(w, r)
+}
+
+func (reg *RegionRouter) UpdateRegionRoutesFromConsul(config *api.ConsulConfiguration) error {
+	// Fetch the list of servers from Consul
+	servers, err := api.ConsulRegionRoutes(config)
+	if err != nil {
+		return err
+	}
+
+	for _, srv := range servers {
+		if srv.DefaultServer {
+			log.Printf("Setting up default routing to %s",
+				srv.URL.String())
+			reg.SetDefaultServer(srv.URL.String())
+		}
+
+		log.Printf("Setting up region routing for [%s] -> %s",
+			strings.ToUpper(srv.CountryCode), srv.URL.String())
+		reg.SetRegionServer(srv.CountryCode, srv.URL.String())
+	}
+
+	return nil
 }

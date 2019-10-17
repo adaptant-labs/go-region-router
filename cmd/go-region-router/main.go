@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 )
 
 func main() {
@@ -67,21 +66,9 @@ func main() {
 		r := region.NewRegionRouter()
 
 		// Fetch the list of servers from Consul
-		servers, err := api.ConsulRegionRoutes(config)
+		err := r.UpdateRegionRoutesFromConsul(config)
 		if err != nil {
 			return err
-		}
-
-		for _, srv := range servers {
-			if srv.DefaultServer {
-				log.Printf("Setting up default routing to %s",
-					srv.URL.String())
-				r.SetDefaultServer(srv.URL.String())
-			}
-
-			log.Printf("Setting up region routing for [%s] -> %s",
-				strings.ToUpper(srv.CountryCode), srv.URL.String())
-			r.SetRegionServer(srv.CountryCode, srv.URL.String())
 		}
 
 		addr := host + ":" + strconv.Itoa(port)
