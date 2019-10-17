@@ -4,6 +4,8 @@ import (
 	"github.com/adaptant-labs/go-region-router/api"
 	"github.com/adaptant-labs/go-region-router/middleware"
 	"github.com/gorilla/mux"
+	consul "github.com/hashicorp/consul/api"
+	"github.com/hashicorp/consul/api/watch"
 	"github.com/urfave/cli"
 	"log"
 	"net"
@@ -15,10 +17,13 @@ import (
 )
 
 type Router struct {
-	Region		*region.RegionRouter
-	mux			*mux.Router
-	config		*api.ConsulConfiguration
-	Refresh		chan bool
+	Region			*region.RegionRouter
+	mux				*mux.Router
+	config			*api.ConsulConfiguration
+	signalRefresh	chan bool
+	serviceUpdates	chan []*consul.ServiceEntry
+	serviceParams	map[string]interface{}
+	plan			*watch.Plan
 }
 
 func (r Router) Start(host string, port int) error {
@@ -28,16 +33,30 @@ func (r Router) Start(host string, port int) error {
 }
 
 func NewRouter(config *api.ConsulConfiguration) *Router {
+	var err error
+
 	r := &Router{
 		Region: region.NewRegionRouter(),
 		mux: mux.NewRouter(),
 		config: config,
-		Refresh: make(chan bool, 1),
+		signalRefresh: make(chan bool, 1),
+		serviceUpdates: make(chan []*consul.ServiceEntry, 1),
 	}
 
-	err := r.Region.UpdateRegionRoutesFromConsul(config)
+	r.serviceParams = make(map[string]interface{})
+	r.serviceParams["type"] = "service"
+	r.serviceParams["service"] = config.Service
+	r.serviceParams["tag"] = config.Tag
+
+	r.plan, err = watch.Parse(r.serviceParams)
 	if err != nil {
-		return nil
+		log.Fatal(err)
+	}
+
+	r.plan.Handler = func(index uint64, result interface{}) {
+		if entries, ok := result.([]*consul.ServiceEntry); ok {
+			r.serviceUpdates <- entries
+		}
 	}
 
 	return r
@@ -87,7 +106,7 @@ func main() {
 		cli.IntFlag{
 			Name:			"port",
 			Usage:			"Port to bind to",
-			Value:			7000,
+			Value:			7001,
 			Destination:	&port,
 		},
 	}
@@ -98,6 +117,12 @@ func main() {
 	}
 
 	app.Action = func(c *cli.Context) error {
+		go func() {
+			if err := r.plan.Run(c.String("consul-agent")); err != nil {
+				log.Fatal(err)
+			}
+		}()
+
 		return r.Start(c.String("host"), c.Int("port"))
 	}
 
@@ -111,17 +136,26 @@ func main() {
 	s := make(chan os.Signal, 1)
 	signal.Notify(s, syscall.SIGUSR2)
 
+	// Handle signal-based refresh
 	go func() {
 		for {
 			<-s
-			r.Refresh <- true
-			log.Println("Setting refresh needed")
+			r.signalRefresh <- true
+			log.Println("Triggering refresh from signal handler")
 		}
 	}()
 
 	for {
-		<-r.Refresh
-		_ = r.Region.UpdateRegionRoutesFromConsul(r.config)
-		log.Println("Reloading server configuration...")
+		select {
+		case <-r.signalRefresh:
+			log.Println("Received reload signal")
+			_ = r.Region.UpdateRegionRoutesFromConsul(r.config)
+			log.Println("Reloaded server configuration by signal")
+		case updates := <-r.serviceUpdates:
+			log.Println("Received service updates from Consul")
+			servers := api.ServerDefinitionsFromServiceEntries(updates)
+			_ = r.Region.UpdateRegionRoutesFromServerDefinitions(servers)
+			log.Println("Reloaded server configuration by Consul Watch")
+		}
 	}
 }

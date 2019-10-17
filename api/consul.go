@@ -17,8 +17,53 @@ func NewConsulConfiguration() *ConsulConfiguration {
 	return &ConsulConfiguration{Service: "api", Tag: "v1"}
 }
 
-// ServerDefinitionFromServiceEntry creates a routing definition for a region from a Consul Catalog Service entry
-func ServerDefinitionFromServiceEntry(entry *consul.CatalogService) *ServerDefinition {
+func ServerDefinitionsFromServiceEntries(entries []*consul.ServiceEntry) []*ServerDefinition {
+	servers := make([]*ServerDefinition, 0)
+
+	for _, entry := range entries {
+		server := ServerDefinitionFromServiceEntry(entry)
+		servers = append(servers, server)
+	}
+
+	return servers
+}
+
+// ServerDefinitionFromServiceEntry creates a routing definition for a region from a Consul Service entry
+func ServerDefinitionFromServiceEntry(entry *consul.ServiceEntry) *ServerDefinition {
+	srv := &ServerDefinition{}
+
+	address := entry.Service.Address
+	if address == "" {
+		address = entry.Node.Address
+	}
+
+	scheme := entry.Service.Meta["protocol"]
+	if scheme == "" {
+		// If no protocol has been defined, assume HTTPS - override for plain HTTP, WebSockets, etc.
+		scheme = "https"
+	}
+
+	srv.URL.Scheme = scheme
+	srv.URL.Host = net.JoinHostPort(address, strconv.Itoa(entry.Service.Port))
+	srv.DefaultServer = false
+
+	// Extract a region-<code> identifier from the tags
+	for _, tag := range entry.Service.Tags {
+		if tag == "default" {
+			srv.DefaultServer = true
+			continue
+		}
+
+		if strings.HasPrefix(tag, "region-") {
+			srv.CountryCode = strings.ToLower(strings.TrimPrefix(tag, "region-"))
+		}
+	}
+
+	return srv
+}
+
+// ServerDefinitionFromServiceEntry creates a routing definition for a region from a Consul Catalog Service
+func ServerDefinitionFromCatalogService(entry *consul.CatalogService) *ServerDefinition {
 	var address string
 
 	srv := &ServerDefinition{}
@@ -78,7 +123,7 @@ func ConsulRegionRoutes(config *ConsulConfiguration) ([]*ServerDefinition, error
 	}
 
 	for _, res := range results {
-		srv := ServerDefinitionFromServiceEntry(res)
+		srv := ServerDefinitionFromCatalogService(res)
 		servers = append(servers, srv)
 	}
 
