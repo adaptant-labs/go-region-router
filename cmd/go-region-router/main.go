@@ -106,7 +106,7 @@ func main() {
 		cli.IntFlag{
 			Name:			"port",
 			Usage:			"Port to bind to",
-			Value:			7001,
+			Value:			7000,
 			Destination:	&port,
 		},
 	}
