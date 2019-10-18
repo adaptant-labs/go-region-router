@@ -100,6 +100,12 @@ func (reg *RegionRouter) DeleteRegionServer(countryCode string) {
 	reg.mapLock.Unlock()
 }
 
+func (reg *RegionRouter) ResetRegionServers() {
+	reg.mapLock.Lock()
+	reg.m = make(map[string]string)
+	reg.mapLock.Unlock()
+}
+
 func (reg RegionRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	destRegion := r.Header.Get("X-Country-Code")
 	if destRegion == "" {
@@ -119,8 +125,6 @@ func (reg RegionRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, unavailableStr, http.StatusServiceUnavailable)
 			return
 		}
-
-		return
 	}
 
 	dest, err := url.Parse(target)
@@ -162,12 +166,8 @@ func (reg RegionRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	reg.h.ServeHTTP(w, r)
 }
 
-func (reg *RegionRouter) UpdateRegionRoutesFromConsul(config *api.ConsulConfiguration) error {
-	// Fetch the list of servers from Consul
-	servers, err := api.ConsulRegionRoutes(config)
-	if err != nil {
-		return err
-	}
+func (reg *RegionRouter) UpdateRegionRoutesFromServerDefinitions(servers []*api.ServerDefinition) error {
+	reg.ResetRegionServers()
 
 	for _, srv := range servers {
 		if srv.DefaultServer {
@@ -182,4 +182,16 @@ func (reg *RegionRouter) UpdateRegionRoutesFromConsul(config *api.ConsulConfigur
 	}
 
 	return nil
+}
+
+func (reg *RegionRouter) UpdateRegionRoutesFromConsul(config *api.ConsulConfiguration) error {
+	reg.ResetRegionServers()
+
+	// Fetch the list of servers from Consul
+	servers, err := api.ConsulRegionRoutes(config)
+	if err != nil {
+		return err
+	}
+
+	return reg.UpdateRegionRoutesFromServerDefinitions(servers)
 }
