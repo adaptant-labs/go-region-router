@@ -39,8 +39,8 @@ func ServerDefinitionFromServiceEntry(entry *consul.ServiceEntry) *ServerDefinit
 
 	scheme := entry.Service.Meta["protocol"]
 	if scheme == "" {
-		// If no protocol has been defined, assume HTTPS - override for plain HTTP, WebSockets, etc.
-		scheme = "https"
+		// If no protocol has been defined, assume HTTP - override for HTTPS, WebSockets, etc.
+		scheme = "http"
 	}
 
 	srv.URL.Scheme = scheme
@@ -81,8 +81,8 @@ func ServerDefinitionFromCatalogService(entry *consul.CatalogService) *ServerDef
 	// metadata.
 	scheme := entry.ServiceMeta["protocol"]
 	if scheme == "" {
-		// If no protocol has been defined, assume HTTPS - override for plain HTTP, WebSockets, etc.
-		scheme = "https"
+		// If no protocol has been defined, assume HTTP - override for HTTPS, WebSockets, etc.
+		scheme = "http"
 	}
 
 	srv.URL.Scheme = scheme
