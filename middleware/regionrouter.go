@@ -1,6 +1,8 @@
 package region
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/adaptant-labs/go-region-router/api"
 	"log"
@@ -12,16 +14,19 @@ import (
 )
 
 type RegionRouter struct {
-	h		http.Handler
+	h http.Handler
 
 	// HTTP Status code for redirection (defaults to http.StatusFound - 302)
-	StatusCode	int
+	StatusCode int
 
-	mapLock	sync.RWMutex
+	// URL to dispatch event notifications to (optional)
+	NotificationURL string
+
+	mapLock sync.RWMutex
 
 	// A string map keyed with the ISO 3166-1 alpha-2 2-character country code and a target host. Scheme is defined by
 	// the destination, while the path is inherited from the originating request.
-	m		map[string]string
+	m map[string]string
 }
 
 // NewRegionRouter returns a new region router instance
@@ -106,6 +111,28 @@ func (reg *RegionRouter) ResetRegionServers() {
 	reg.mapLock.Unlock()
 }
 
+type RegionRouterNotification struct {
+	EventType        string `json:"event_type"`
+	PreviousLocation string `json:"previous_location,omitempty"`
+	NewLocation      string `json:"new_location,omitempty"`
+}
+
+func (reg RegionRouter) NotifyListeners(n *RegionRouterNotification) error {
+	if reg.NotificationURL != "" {
+		b, err := json.Marshal(n)
+		if err != nil {
+			return err
+		}
+
+		_, err = http.Post(reg.NotificationURL, "application/json", bytes.NewBuffer(b))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (reg RegionRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	destRegion := r.Header.Get("X-Country-Code")
 	if destRegion == "" {
@@ -121,6 +148,14 @@ func (reg RegionRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		// Otherwise, return a 503 response
 		if target == "" {
+			// Notify interested parties
+			if reg.NotificationURL != "" {
+				n := new(RegionRouterNotification)
+				n.EventType = "DeploymentNeeded"
+				n.NewLocation = destRegion
+				_ = reg.NotifyListeners(n)
+			}
+
 			unavailableStr := fmt.Sprintf("Service is unavailable in your region (%s)", destRegion)
 			http.Error(w, unavailableStr, http.StatusServiceUnavailable)
 			return

@@ -32,7 +32,7 @@ func (r Router) Start(host string, port int) error {
 	return http.ListenAndServe(addr, region.CountryCodeHandler(r.Region.RegionHandler()(r.mux)))
 }
 
-func NewRouter(config *api.ConsulConfiguration) *Router {
+func NewRouter(config *api.ConsulConfiguration, cbUrl string) *Router {
 	var err error
 
 	r := &Router{
@@ -41,6 +41,11 @@ func NewRouter(config *api.ConsulConfiguration) *Router {
 		config: config,
 		signalRefresh: make(chan bool, 1),
 		serviceUpdates: make(chan []*consul.ServiceEntry, 1),
+	}
+
+	// Register the notification callback URL, if defined
+	if cbUrl != "" {
+		r.Region.NotificationURL = cbUrl
 	}
 
 	r.serviceParams = make(map[string]interface{})
@@ -61,9 +66,11 @@ func NewRouter(config *api.ConsulConfiguration) *Router {
 
 	return r
 }
+
 func main() {
 	var port int
 	var host string
+	var cbUrl string
 
 	app := cli.NewApp()
 	app.Name = "go-region-router"
@@ -109,9 +116,17 @@ func main() {
 			Value:			7000,
 			Destination:	&port,
 		},
+
+		cli.StringFlag{
+			Name:			"notify",
+			Usage:			"REST API Endpoint to POST event notifications to (disabled by default)",
+			Value:			"",
+			EnvVar:			"REGION_ROUTER_NOTIFICATION_URL",
+			Destination:	&cbUrl,
+		},
 	}
 
-	r := NewRouter(config)
+	r := NewRouter(config, cbUrl)
 	if r == nil {
 		log.Fatal("Failed to initialize router")
 	}

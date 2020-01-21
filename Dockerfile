@@ -1,6 +1,7 @@
 FROM golang:latest as builder
 
 ENV GO111MODULE=on
+ARG REGION_ROUTER_NOTIFICATION_URL
 
 WORKDIR /go/src
 ADD . /go/src
