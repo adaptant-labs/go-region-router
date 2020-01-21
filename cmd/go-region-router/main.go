@@ -70,7 +70,6 @@ func NewRouter(config *api.ConsulConfiguration, cbUrl string) *Router {
 func main() {
 	var port int
 	var host string
-	var cbUrl string
 
 	app := cli.NewApp()
 	app.Name = "go-region-router"
@@ -116,15 +115,9 @@ func main() {
 			Value:			7000,
 			Destination:	&port,
 		},
-
-		cli.StringFlag{
-			Name:			"notify",
-			Usage:			"REST API Endpoint to POST event notifications to (disabled by default)",
-			Value:			"",
-			EnvVar:			"REGION_ROUTER_NOTIFICATION_URL",
-			Destination:	&cbUrl,
-		},
 	}
+
+	cbUrl := os.Getenv("REGION_ROUTER_NOTIFICATION_URL")
 
 	r := NewRouter(config, cbUrl)
 	if r == nil {

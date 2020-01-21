@@ -14,6 +14,13 @@ services:
         timeout: 10s
         retries: 5
 
+  notification-callback-server:
+    image: linvirt/echo-server
+    restart: always
+    command: "http-echo-server 8443"
+    ports:
+      - 8443:8443
+
   http-echo-de:
     image: hashicorp/http-echo:latest
     restart: always
@@ -37,11 +44,12 @@ services:
         condition: service_healthy
 
   go-region-router:
-    image: adaptant/go-region-router:latest
+    image: adaptant/go-region-router:notifications
     restart: always
     command: --consul-agent "consul:8500"
     environment:
       REVERSE_GEOCODING_SERVICE: "reverse-geocoder:4041"
+      REGION_ROUTER_NOTIFICATION_URL: "http://notification-callback-server:8443/notifications"
     depends_on:
       consul:
         condition: service_healthy

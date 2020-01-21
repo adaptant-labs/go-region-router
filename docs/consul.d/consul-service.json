@@ -7,8 +7,7 @@
       "port":    5678,
       "tags": [
         "v1",
-        "region-de",
-	"default"
+        "region-de"
       ],
       "meta": {
         "protocol": "http"
